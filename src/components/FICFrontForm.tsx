@@ -26,12 +26,15 @@ const FICFrontForm = () => {
   });
 
   const [stationChecks, setStationChecks] = useState({
-    vqdOn: false, chassis: false, dyno: false, ncat: false, mdt: false,
-    mas: false, track: false, function: false, preShip: false,
+    vqdOn: false, chassis: false, dyno: false, 
+    ncat1: false, ncat2: false, 
+    mdt1: false, mdt2: false,
+    mas1: false, mas2: false, 
+    function: false, preShip: false,
     shuttle60a: false, scan60a: false,
   });
 
-  const [flexInspection, setFlexInspection] = useState({
+  const [trackInspection, setTrackInspection] = useState({
     rough: false, short: false, long: false,
   });
 
@@ -275,59 +278,90 @@ const FICFrontForm = () => {
 
         {/* Station Checkboxes */}
         <div className="p-3 border-b border-border">
-          <div className="flex flex-wrap gap-3">
-            {Object.entries(stationChecks).map(([key, value]) => (
-              <label key={key} className="flex items-center gap-2 min-w-[100px] cursor-pointer touch-target">
-                <Checkbox 
-                  className="form-checkbox"
-                  checked={value}
-                  onCheckedChange={(checked) => setStationChecks(p => ({...p, [key]: !!checked}))}
-                />
-                <span className="text-xs font-medium uppercase">{key.replace(/([A-Z])/g, ' $1').trim()}</span>
-              </label>
-            ))}
-          </div>
-        </div>
-
-        {/* Flex Inspection */}
-        <div className="p-3 flex items-center gap-4">
-          <span className="text-xs font-semibold uppercase">Flex Inspection:</span>
-          {Object.entries(flexInspection).map(([key, value]) => (
-            <label key={key} className="flex items-center gap-2 cursor-pointer touch-target">
-              <Checkbox 
-                className="form-checkbox"
-                checked={value}
-                onCheckedChange={(checked) => setFlexInspection(p => ({...p, [key]: !!checked}))}
-              />
-              <span className="text-xs uppercase">{key}</span>
+          <div className="flex flex-wrap gap-3 items-center">
+            <label className="flex items-center gap-2 cursor-pointer touch-target">
+              <Checkbox className="form-checkbox" checked={stationChecks.vqdOn} onCheckedChange={(checked) => setStationChecks(p => ({...p, vqdOn: !!checked}))} />
+              <span className="text-xs font-medium uppercase">VQD ON</span>
             </label>
-          ))}
-        </div>
-      </div>
-
-      {/* DTC Stored Row */}
-      <div className="bg-card rounded-lg border border-border shadow-sm mb-4 overflow-hidden">
-        <div className="form-cell form-cell-header py-2">
-          Check Engine Light On / Permanent DTC Stored
-        </div>
-        <div className="grid grid-cols-4 gap-0">
-          <div className="form-cell">
-            <label className="text-xs text-muted-foreground">WIU ASSOC</label>
-            <Input className="form-input h-10" value={dtcStored.wiuAssoc} onChange={(e) => setDtcStored(p => ({...p, wiuAssoc: e.target.value}))} />
-          </div>
-          <div className="form-cell text-center">
-            <label className="text-xs text-muted-foreground">REJ X</label>
-            <div className="touch-target">
-              <Checkbox className="form-checkbox" checked={dtcStored.rej} onCheckedChange={(checked) => setDtcStored(p => ({...p, rej: !!checked}))} />
+            <label className="flex items-center gap-2 cursor-pointer touch-target">
+              <Checkbox className="form-checkbox" checked={stationChecks.chassis} onCheckedChange={(checked) => setStationChecks(p => ({...p, chassis: !!checked}))} />
+              <span className="text-xs font-medium uppercase">CHASSIS</span>
+            </label>
+            <label className="flex items-center gap-2 cursor-pointer touch-target">
+              <Checkbox className="form-checkbox" checked={stationChecks.dyno} onCheckedChange={(checked) => setStationChecks(p => ({...p, dyno: !!checked}))} />
+              <span className="text-xs font-medium uppercase">DYNO</span>
+            </label>
+            
+            {/* NCAT with 1 and 2 */}
+            <div className="flex items-center gap-1">
+              <span className="text-xs font-medium uppercase">NCAT</span>
+              <label className="flex items-center gap-1 cursor-pointer touch-target">
+                <Checkbox className="form-checkbox" checked={stationChecks.ncat1} onCheckedChange={(checked) => setStationChecks(p => ({...p, ncat1: !!checked}))} />
+                <span className="text-xs">1</span>
+              </label>
+              <label className="flex items-center gap-1 cursor-pointer touch-target">
+                <Checkbox className="form-checkbox" checked={stationChecks.ncat2} onCheckedChange={(checked) => setStationChecks(p => ({...p, ncat2: !!checked}))} />
+                <span className="text-xs">2</span>
+              </label>
             </div>
-          </div>
-          <div className="form-cell">
-            <label className="text-xs text-muted-foreground">REPAIRED BY</label>
-            <Input className="form-input h-10" value={dtcStored.repairedBy} onChange={(e) => setDtcStored(p => ({...p, repairedBy: e.target.value}))} />
-          </div>
-          <div className="form-cell">
-            <label className="text-xs text-muted-foreground">INSPECTED BY</label>
-            <Input className="form-input h-10" value={dtcStored.inspectedBy} onChange={(e) => setDtcStored(p => ({...p, inspectedBy: e.target.value}))} />
+
+            {/* MDT with 1 and 2 */}
+            <div className="flex items-center gap-1">
+              <span className="text-xs font-medium uppercase">MDT</span>
+              <label className="flex items-center gap-1 cursor-pointer touch-target">
+                <Checkbox className="form-checkbox" checked={stationChecks.mdt1} onCheckedChange={(checked) => setStationChecks(p => ({...p, mdt1: !!checked}))} />
+                <span className="text-xs">1</span>
+              </label>
+              <label className="flex items-center gap-1 cursor-pointer touch-target">
+                <Checkbox className="form-checkbox" checked={stationChecks.mdt2} onCheckedChange={(checked) => setStationChecks(p => ({...p, mdt2: !!checked}))} />
+                <span className="text-xs">2</span>
+              </label>
+            </div>
+
+            {/* MAS with 1 and 2 */}
+            <div className="flex items-center gap-1">
+              <span className="text-xs font-medium uppercase">MAS</span>
+              <label className="flex items-center gap-1 cursor-pointer touch-target">
+                <Checkbox className="form-checkbox" checked={stationChecks.mas1} onCheckedChange={(checked) => setStationChecks(p => ({...p, mas1: !!checked}))} />
+                <span className="text-xs">1</span>
+              </label>
+              <label className="flex items-center gap-1 cursor-pointer touch-target">
+                <Checkbox className="form-checkbox" checked={stationChecks.mas2} onCheckedChange={(checked) => setStationChecks(p => ({...p, mas2: !!checked}))} />
+                <span className="text-xs">2</span>
+              </label>
+            </div>
+
+            {/* Track with Rough, Short, Long */}
+            <div className="flex items-center gap-2">
+              <span className="text-xs font-medium uppercase">TRACK</span>
+              {Object.entries(trackInspection).map(([key, value]) => (
+                <label key={key} className="flex items-center gap-1 cursor-pointer touch-target">
+                  <Checkbox 
+                    className="form-checkbox"
+                    checked={value}
+                    onCheckedChange={(checked) => setTrackInspection(p => ({...p, [key]: !!checked}))}
+                  />
+                  <span className="text-xs uppercase">{key}</span>
+                </label>
+              ))}
+            </div>
+
+            <label className="flex items-center gap-2 cursor-pointer touch-target">
+              <Checkbox className="form-checkbox" checked={stationChecks.function} onCheckedChange={(checked) => setStationChecks(p => ({...p, function: !!checked}))} />
+              <span className="text-xs font-medium uppercase">FUNCTION</span>
+            </label>
+            <label className="flex items-center gap-2 cursor-pointer touch-target">
+              <Checkbox className="form-checkbox" checked={stationChecks.preShip} onCheckedChange={(checked) => setStationChecks(p => ({...p, preShip: !!checked}))} />
+              <span className="text-xs font-medium uppercase">PRE-SHIP</span>
+            </label>
+            <label className="flex items-center gap-2 cursor-pointer touch-target">
+              <Checkbox className="form-checkbox" checked={stationChecks.shuttle60a} onCheckedChange={(checked) => setStationChecks(p => ({...p, shuttle60a: !!checked}))} />
+              <span className="text-xs font-medium uppercase">60A SHUTTLE</span>
+            </label>
+            <label className="flex items-center gap-2 cursor-pointer touch-target">
+              <Checkbox className="form-checkbox" checked={stationChecks.scan60a} onCheckedChange={(checked) => setStationChecks(p => ({...p, scan60a: !!checked}))} />
+              <span className="text-xs font-medium uppercase">60A SCAN</span>
+            </label>
           </div>
         </div>
       </div>
@@ -406,6 +440,33 @@ const FICFrontForm = () => {
                 ))}
               </tbody>
             </table>
+          </div>
+        </div>
+      </div>
+
+      {/* DTC Stored Row - Moved to bottom */}
+      <div className="bg-card rounded-lg border border-border shadow-sm mt-4 overflow-hidden">
+        <div className="form-cell form-cell-header py-2">
+          Check Engine Light On / Permanent DTC Stored
+        </div>
+        <div className="grid grid-cols-4 gap-0">
+          <div className="form-cell">
+            <label className="text-xs text-muted-foreground">WIU ASSOC</label>
+            <Input className="form-input h-10" value={dtcStored.wiuAssoc} onChange={(e) => setDtcStored(p => ({...p, wiuAssoc: e.target.value}))} />
+          </div>
+          <div className="form-cell text-center">
+            <label className="text-xs text-muted-foreground">REJ X</label>
+            <div className="touch-target">
+              <Checkbox className="form-checkbox" checked={dtcStored.rej} onCheckedChange={(checked) => setDtcStored(p => ({...p, rej: !!checked}))} />
+            </div>
+          </div>
+          <div className="form-cell">
+            <label className="text-xs text-muted-foreground">REPAIRED BY</label>
+            <Input className="form-input h-10" value={dtcStored.repairedBy} onChange={(e) => setDtcStored(p => ({...p, repairedBy: e.target.value}))} />
+          </div>
+          <div className="form-cell">
+            <label className="text-xs text-muted-foreground">INSPECTED BY</label>
+            <Input className="form-input h-10" value={dtcStored.inspectedBy} onChange={(e) => setDtcStored(p => ({...p, inspectedBy: e.target.value}))} />
           </div>
         </div>
       </div>
