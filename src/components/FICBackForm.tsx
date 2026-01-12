@@ -1,8 +1,51 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Input } from "@/components/ui/input";
 import { Checkbox } from "@/components/ui/checkbox";
+import { supabase } from "@/integrations/supabase/client";
+import { useToast } from "@/hooks/use-toast";
+
+// API data interfaces
+interface PaintMicronApiEntry {
+  row: number;
+  fillLid?: string;
+  allBody?: string;
+  hood?: string;
+  roof?: string;
+  trunkTailgate?: string;
+  fenderLeft?: string;
+  fenderRight?: string;
+  rearPanelLeft?: string;
+  rearPanelRight?: string;
+  frontDoor1?: string;
+  frontDoor2?: string;
+  rearDoor3?: string;
+  rearDoor4?: string;
+  pillarLeft?: string;
+  pillarRight?: string;
+  locationMain?: string;
+  locationFinal?: string;
+  repairConfirmedBy?: string;
+}
+
+interface PartsChangeApiEntry {
+  row: number;
+  partName?: string;
+  removeX?: boolean;
+  removedBy?: string;
+  installedBy?: string;
+  inspectedBy?: string;
+}
+
+interface FICBackFormApiData {
+  vin?: string;
+  section: 'paintMicrons' | 'partsChanges' | 'both';
+  paintMicrons?: PaintMicronApiEntry[];
+  partsChanges?: PartsChangeApiEntry[];
+}
 
 const FICBackForm = () => {
+  const { toast } = useToast();
+  
   const [headerChecks, setHeaderChecks] = useState({
     lsWaterleak: false,
     rsWaterleak: false,
@@ -10,7 +53,7 @@ const FICBackForm = () => {
     repairConfirmation: false,
   });
 
-  const [vin] = useState("5J8YD9H43TL000680");
+  const [vin, setVin] = useState("5J8YD9H43TL000680");
   const [associate, setAssociate] = useState("");
 
   // Paint Microns table data
@@ -67,6 +110,80 @@ const FICBackForm = () => {
     routingBoxes.forEach(i => { initial[i] = ""; });
     return initial;
   });
+
+  // Function to apply API data to form
+  const applyApiData = (data: FICBackFormApiData) => {
+    if (data.vin) {
+      setVin(data.vin);
+    }
+
+    // Apply paint microns data
+    if (data.paintMicrons && (data.section === 'paintMicrons' || data.section === 'both')) {
+      data.paintMicrons.forEach(entry => {
+        if (entry.row >= 0 && entry.row <= 9) {
+          setPaintMicrons(prev => ({
+            ...prev,
+            [entry.row]: {
+              ...prev[entry.row],
+              ...(entry.fillLid !== undefined && { fillLid: entry.fillLid }),
+              ...(entry.allBody !== undefined && { allBody: entry.allBody }),
+              ...(entry.hood !== undefined && { hood: entry.hood }),
+              ...(entry.roof !== undefined && { roof: entry.roof }),
+              ...(entry.trunkTailgate !== undefined && { trunkTailgate: entry.trunkTailgate }),
+              ...(entry.fenderLeft !== undefined && { fenderLeft: entry.fenderLeft }),
+              ...(entry.fenderRight !== undefined && { fenderRight: entry.fenderRight }),
+              ...(entry.rearPanelLeft !== undefined && { rearPanelLeft: entry.rearPanelLeft }),
+              ...(entry.rearPanelRight !== undefined && { rearPanelRight: entry.rearPanelRight }),
+              ...(entry.frontDoor1 !== undefined && { frontDoor1: entry.frontDoor1 }),
+              ...(entry.frontDoor2 !== undefined && { frontDoor2: entry.frontDoor2 }),
+              ...(entry.rearDoor3 !== undefined && { rearDoor3: entry.rearDoor3 }),
+              ...(entry.rearDoor4 !== undefined && { rearDoor4: entry.rearDoor4 }),
+              ...(entry.pillarLeft !== undefined && { pillarLeft: entry.pillarLeft }),
+              ...(entry.pillarRight !== undefined && { pillarRight: entry.pillarRight }),
+              ...(entry.locationMain !== undefined && { locationMain: entry.locationMain }),
+              ...(entry.locationFinal !== undefined && { locationFinal: entry.locationFinal }),
+              ...(entry.repairConfirmedBy !== undefined && { repairConfirmedBy: entry.repairConfirmedBy }),
+            }
+          }));
+        }
+      });
+      toast({
+        title: "Paint Microns Updated",
+        description: `Updated ${data.paintMicrons.length} paint micron entries via API`,
+      });
+    }
+
+    // Apply parts changes data
+    if (data.partsChanges && (data.section === 'partsChanges' || data.section === 'both')) {
+      data.partsChanges.forEach(entry => {
+        if (entry.row >= 0 && entry.row <= 11) {
+          setPartsChanges(prev => ({
+            ...prev,
+            [entry.row]: {
+              ...prev[entry.row],
+              ...(entry.partName !== undefined && { partName: entry.partName }),
+              ...(entry.removeX !== undefined && { removeX: entry.removeX }),
+              ...(entry.removedBy !== undefined && { removedBy: entry.removedBy }),
+              ...(entry.installedBy !== undefined && { installedBy: entry.installedBy }),
+              ...(entry.inspectedBy !== undefined && { inspectedBy: entry.inspectedBy }),
+            }
+          }));
+        }
+      });
+      toast({
+        title: "Parts Changes Updated",
+        description: `Updated ${data.partsChanges.length} parts change entries via API`,
+      });
+    }
+  };
+
+  // Expose the applyApiData function globally for testing
+  useEffect(() => {
+    (window as any).applyFICBackFormData = applyApiData;
+    return () => {
+      delete (window as any).applyFICBackFormData;
+    };
+  }, []);
 
   const updatePaintMicron = (row: number, field: string, value: string) => {
     setPaintMicrons(prev => ({
@@ -189,8 +306,9 @@ const FICBackForm = () => {
 
       {/* Paint Microns Table */}
       <div className="bg-card rounded-lg border border-border shadow-sm mb-4 overflow-hidden">
-        <div className="form-cell form-cell-header">
-          CHECK PAINT MICRONS EACH TIME A REPAIR IS MADE
+        <div className="form-cell form-cell-header flex items-center justify-between">
+          <span>CHECK PAINT MICRONS EACH TIME A REPAIR IS MADE</span>
+          <span className="text-xs bg-primary/20 text-primary px-2 py-1 rounded">API Enabled</span>
         </div>
         <div className="overflow-x-auto">
           <table className="w-full border-collapse text-xs">
@@ -269,7 +387,10 @@ const FICBackForm = () => {
 
       {/* Parts On/Off Table */}
       <div className="bg-card rounded-lg border border-border shadow-sm mb-4 overflow-hidden">
-        <div className="form-cell form-cell-header">PARTS ON/OFF - PART CHANGES</div>
+        <div className="form-cell form-cell-header flex items-center justify-between">
+          <span>PARTS ON/OFF - PART CHANGES</span>
+          <span className="text-xs bg-primary/20 text-primary px-2 py-1 rounded">API Enabled</span>
+        </div>
         <div className="overflow-x-auto">
           <table className="w-full border-collapse">
             <thead>
