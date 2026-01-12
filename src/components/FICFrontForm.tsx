@@ -1,6 +1,8 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Input } from "@/components/ui/input";
 import { Checkbox } from "@/components/ui/checkbox";
+import { supabase } from "@/integrations/supabase/client";
+import { useToast } from "@/hooks/use-toast";
 
 interface InspectionRow {
   item: string;
@@ -10,7 +12,16 @@ interface InspectionRow {
   inspectedBy: string;
 }
 
+interface TrunkTailgateApiData {
+  vin?: string;
+  tailgateFunction?: Partial<InspectionRow>;
+  seatbeltFunction?: Partial<InspectionRow>;
+  seatHeadrest?: Partial<InspectionRow>;
+  vinLabelPrintedCondition?: Partial<InspectionRow>;
+}
+
 const FICFrontForm = () => {
+  const { toast } = useToast();
   const [headerData, setHeaderData] = useState({
     model: "MDX 3.5L (2WD)",
     paintShift: "",
@@ -24,6 +35,62 @@ const FICFrontForm = () => {
     productLot: "ELP 03AF202507230090",
     kdLot: "ELP 032025070017O3",
   });
+
+  // Function items that can be updated via API (TRUNK/TAILGATE section)
+  const trunkTailgateItems = [
+    "VIN Label Printed Condition",
+    "Tailgate Function",
+    "Seatbelt Function",
+    "Seat Headrest",
+  ];
+
+  // Map API field names to form item names
+  const apiToFormMapping: Record<string, string> = {
+    vinLabelPrintedCondition: "VIN Label Printed Condition",
+    tailgateFunction: "Tailgate Function",
+    seatbeltFunction: "Seatbelt Function",
+    seatHeadrest: "Seat Headrest",
+  };
+
+  // Apply data received from API to the form
+  const applyApiData = (data: TrunkTailgateApiData) => {
+    setInspectionData(prev => {
+      const updated = { ...prev };
+      
+      Object.entries(apiToFormMapping).forEach(([apiKey, formKey]) => {
+        const apiData = data[apiKey as keyof TrunkTailgateApiData];
+        if (apiData && typeof apiData === 'object') {
+          updated[formKey] = {
+            ...updated[formKey],
+            wiuAssoc: (apiData as Partial<InspectionRow>).wiuAssoc || updated[formKey].wiuAssoc,
+            rej: (apiData as Partial<InspectionRow>).rej ?? updated[formKey].rej,
+            repairedBy: (apiData as Partial<InspectionRow>).repairedBy || updated[formKey].repairedBy,
+            inspectedBy: (apiData as Partial<InspectionRow>).inspectedBy || updated[formKey].inspectedBy,
+          };
+        }
+      });
+      
+      return updated;
+    });
+    
+    // Update VIN if provided
+    if (data.vin) {
+      setHeaderData(prev => ({ ...prev, vin: data.vin! }));
+    }
+    
+    toast({
+      title: "API Data Applied",
+      description: "TRUNK/TAILGATE section updated from API",
+    });
+  };
+
+  // Expose the applyApiData function globally for testing
+  useEffect(() => {
+    (window as unknown as { applyTrunkTailgateData: typeof applyApiData }).applyTrunkTailgateData = applyApiData;
+    return () => {
+      delete (window as unknown as { applyTrunkTailgateData?: typeof applyApiData }).applyTrunkTailgateData;
+    };
+  }, []);
 
   const [stationChecks, setStationChecks] = useState({
     vqdOn: false, chassis: false, dyno: false, 
