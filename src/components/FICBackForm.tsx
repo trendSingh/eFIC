@@ -469,9 +469,9 @@ const FICBackForm = () => {
           <table className="w-full border-collapse">
             <thead>
               <tr>
-                <th className="form-cell form-cell-section text-left">PART NAME</th>
+                <th className="form-cell form-cell-section text-left">DEFECT DETAILS</th>
                 <th className="form-cell form-cell-section text-center w-20">REMOVE X</th>
-                <th className="form-cell form-cell-section text-center w-28">REMOVED BY</th>
+                <th className="form-cell form-cell-section text-center w-28">LOGGED BY</th>
                 <th className="form-cell form-cell-section text-center w-28">INSTALLED BY</th>
                 <th className="form-cell form-cell-section text-center w-28">INSPECTED BY</th>
               </tr>
