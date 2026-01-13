@@ -84,10 +84,86 @@ const FICFrontForm = () => {
     });
   };
 
-  // Expose the applyApiData function globally for testing
+  // Subscribe to realtime updates from API
   useEffect(() => {
+    // Fetch any existing unprocessed data on mount
+    const fetchPendingData = async () => {
+      const { data: pendingItems, error } = await supabase
+        .from('fic_form_pending_data')
+        .select('*')
+        .eq('form_type', 'trunk_tailgate')
+        .eq('processed', false)
+        .order('created_at', { ascending: true });
+
+      if (error) {
+        console.error('Error fetching pending data:', error);
+        return;
+      }
+
+      if (pendingItems && pendingItems.length > 0) {
+        for (const item of pendingItems) {
+          const itemData = item.data as TrunkTailgateApiData | null;
+          const formData: TrunkTailgateApiData = {
+            vin: item.vin,
+            tailgateFunction: itemData?.tailgateFunction,
+            seatbeltFunction: itemData?.seatbeltFunction,
+            seatHeadrest: itemData?.seatHeadrest,
+            vinLabelPrintedCondition: itemData?.vinLabelPrintedCondition
+          };
+          applyApiData(formData);
+
+          // Mark as processed
+          await supabase
+            .from('fic_form_pending_data')
+            .update({ processed: true, processed_at: new Date().toISOString() })
+            .eq('id', item.id);
+        }
+      }
+    };
+
+    fetchPendingData();
+
+    // Subscribe to new inserts
+    const channel = supabase
+      .channel('fic_trunk_tailgate_updates')
+      .on(
+        'postgres_changes',
+        {
+          event: 'INSERT',
+          schema: 'public',
+          table: 'fic_form_pending_data',
+          filter: 'form_type=eq.trunk_tailgate'
+        },
+        async (payload) => {
+          console.log('Received new trunk/tailgate data:', payload);
+          const item = payload.new as any;
+          
+          if (!item.processed) {
+            const itemData = item.data as TrunkTailgateApiData | null;
+            const formData: TrunkTailgateApiData = {
+              vin: item.vin,
+              tailgateFunction: itemData?.tailgateFunction,
+              seatbeltFunction: itemData?.seatbeltFunction,
+              seatHeadrest: itemData?.seatHeadrest,
+              vinLabelPrintedCondition: itemData?.vinLabelPrintedCondition
+            };
+            applyApiData(formData);
+
+            // Mark as processed
+            await supabase
+              .from('fic_form_pending_data')
+              .update({ processed: true, processed_at: new Date().toISOString() })
+              .eq('id', item.id);
+          }
+        }
+      )
+      .subscribe();
+
+    // Expose the applyApiData function globally for testing
     (window as unknown as { applyTrunkTailgateData: typeof applyApiData }).applyTrunkTailgateData = applyApiData;
+
     return () => {
+      supabase.removeChannel(channel);
       delete (window as unknown as { applyTrunkTailgateData?: typeof applyApiData }).applyTrunkTailgateData;
     };
   }, []);

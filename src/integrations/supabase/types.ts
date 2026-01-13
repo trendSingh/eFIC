@@ -14,7 +14,39 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      fic_form_pending_data: {
+        Row: {
+          created_at: string
+          data: Json
+          form_type: string
+          id: string
+          processed: boolean
+          processed_at: string | null
+          section: string | null
+          vin: string
+        }
+        Insert: {
+          created_at?: string
+          data: Json
+          form_type: string
+          id?: string
+          processed?: boolean
+          processed_at?: string | null
+          section?: string | null
+          vin: string
+        }
+        Update: {
+          created_at?: string
+          data?: Json
+          form_type?: string
+          id?: string
+          processed?: boolean
+          processed_at?: string | null
+          section?: string | null
+          vin?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never

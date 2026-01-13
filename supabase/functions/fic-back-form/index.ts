@@ -1,3 +1,5 @@
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
@@ -48,6 +50,11 @@ Deno.serve(async (req) => {
   }
 
   try {
+    // Initialize Supabase client
+    const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
+    const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
+    const supabase = createClient(supabaseUrl, supabaseServiceKey);
+
     if (req.method === 'POST') {
       const data: FICBackFormData = await req.json();
       
@@ -141,10 +148,39 @@ Deno.serve(async (req) => {
         }
       }
 
+      // Store the data in the database for the form to pick up
+      const { error: insertError } = await supabase
+        .from('fic_form_pending_data')
+        .insert({
+          vin: data.vin,
+          form_type: 'back_form',
+          section: data.section,
+          data: {
+            paintMicrons: data.paintMicrons,
+            partsChanges: data.partsChanges
+          },
+          processed: false
+        });
+
+      if (insertError) {
+        console.error('Error inserting pending data:', insertError);
+        return new Response(
+          JSON.stringify({ 
+            success: false, 
+            error: 'Failed to store form data',
+            details: insertError.message 
+          }),
+          { 
+            status: 500, 
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+          }
+        );
+      }
+
       return new Response(
         JSON.stringify({
           success: true,
-          message: 'FIC Back Form data received successfully',
+          message: 'FIC Back Form data received and queued for form update',
           receivedData: data,
           timestamp: new Date().toISOString()
         }),
@@ -160,7 +196,7 @@ Deno.serve(async (req) => {
         JSON.stringify({
           endpoint: '/fic-back-form',
           methods: ['POST', 'GET'],
-          description: 'API endpoint for FIC Back Form (Page 2) - Paint Microns and Parts Changes',
+          description: 'API endpoint for FIC Back Form (Page 2) - Paint Microns and Parts Changes. Data sent via POST will automatically populate the form in real-time.',
           schema: {
             vin: { type: 'string', required: true, description: 'Vehicle Identification Number' },
             section: { 
