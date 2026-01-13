@@ -40,6 +40,11 @@ Deno.serve(async (req) => {
   }
 
   try {
+    // Initialize Supabase client
+    const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
+    const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
+    const supabase = createClient(supabaseUrl, supabaseServiceKey);
+
     if (req.method === 'POST') {
       const data: TrunkTailgateData = await req.json();
       
@@ -57,11 +62,41 @@ Deno.serve(async (req) => {
         );
       }
 
-      // Return the processed data (in a real app, you might store this in a database)
+      // Store the data in the database for the form to pick up
+      const { error: insertError } = await supabase
+        .from('fic_form_pending_data')
+        .insert({
+          vin: data.vin,
+          form_type: 'trunk_tailgate',
+          section: null,
+          data: {
+            tailgateFunction: data.tailgateFunction,
+            seatbeltFunction: data.seatbeltFunction,
+            seatHeadrest: data.seatHeadrest,
+            vinLabelPrintedCondition: data.vinLabelPrintedCondition
+          },
+          processed: false
+        });
+
+      if (insertError) {
+        console.error('Error inserting pending data:', insertError);
+        return new Response(
+          JSON.stringify({ 
+            success: false, 
+            error: 'Failed to store form data',
+            details: insertError.message 
+          }),
+          { 
+            status: 500, 
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+          }
+        );
+      }
+
       return new Response(
         JSON.stringify({
           success: true,
-          message: 'TRUNK/TAILGATE data received successfully',
+          message: 'TRUNK/TAILGATE data received and queued for form update',
           receivedData: data,
           timestamp: new Date().toISOString()
         }),
@@ -78,7 +113,7 @@ Deno.serve(async (req) => {
         JSON.stringify({
           endpoint: '/fic-trunk-tailgate',
           methods: ['POST', 'GET'],
-          description: 'API endpoint for TRUNK/TAILGATE inspection data',
+          description: 'API endpoint for TRUNK/TAILGATE inspection data. Data sent via POST will automatically populate the form in real-time.',
           schema: {
             vin: { type: 'string', required: true, description: 'Vehicle Identification Number' },
             tailgateFunction: {
